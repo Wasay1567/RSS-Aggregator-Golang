@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/wasay1567/rssagg/internal/auth"
 	"github.com/wasay1567/rssagg/internal/database"
 )
 
@@ -39,17 +38,6 @@ func (apiCfg *ApiConfig) handlerUserCreate(w http.ResponseWriter, r *http.Reques
 	responseWithJson(w, 201, databaseUserToUser(user))
 }
 
-func (apiCfg *ApiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request) {
-	apikey, err := auth.GetAPIKey(r.Header)
-	if err != nil {
-		responseWithJson(w, 403, map[string]string{"error": "auth error: " + err.Error()})
-		return
-	}
-	user, err := apiCfg.DB.GetUserByAPIKey(r.Context(), apikey)
-	if err != nil {
-		responseWithJson(w, 404, map[string]string{"error": "user not found"})
-		return
-	}
-
+func (apiCfg *ApiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request, user database.User) {
 	responseWithJson(w, 200, databaseUserToUser(user))
 }
