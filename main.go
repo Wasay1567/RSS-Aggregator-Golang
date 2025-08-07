@@ -2,10 +2,10 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/joho/godotenv"
@@ -19,7 +19,6 @@ type ApiConfig struct {
 }
 
 func main() {
-	fmt.Println("Hello World")
 	godotenv.Load()
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -41,14 +40,25 @@ func main() {
 		DB: database.New(conn),
 	}
 
+	go startScraping(apiCfg.DB, 10, time.Minute)
+
 	router := chi.NewRouter()
 
 	v1router := chi.NewRouter()
+
 	v1router.Get("/healthz", handlerReadiness)
+
 	v1router.Post("/users", apiCfg.handlerUserCreate)
 	v1router.Get("/users", apiCfg.middlewareAuth(apiCfg.handlerGetUser))
-	v1router.Post("/feed", apiCfg.middlewareAuth(apiCfg.handlerFeedCreate))
-	v1router.Get("/users", apiCfg.handlerGetFeeds)
+
+	v1router.Post("/feeds", apiCfg.middlewareAuth(apiCfg.handlerFeedCreate))
+	v1router.Get("/feeds", apiCfg.handlerGetFeeds)
+
+	v1router.Get("/posts", apiCfg.middlewareAuth(apiCfg.handlerGetPostsForUser))
+
+	v1router.Post("/feed-follows", apiCfg.middlewareAuth(apiCfg.handlerFeedFollowsCreate))
+	v1router.Get("/feed-follows", apiCfg.middlewareAuth(apiCfg.handlerGetFeedFollows))
+	v1router.Delete("/feed-follows/{feedFollowId}", apiCfg.middlewareAuth(apiCfg.handlerDeleteFeedFollow))
 
 	router.Mount("/v1", v1router)
 
